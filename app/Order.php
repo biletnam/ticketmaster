@@ -24,6 +24,18 @@ class Order extends Model
         return $order;
     }
 
+    public static function fromReservation($reservation)
+    {
+        $order = self::create([
+            'email' => $reservation->email(),
+            'amount' => $reservation->totalCost(),
+        ]);
+
+        $order->tickets()->saveMany($reservation->tickets());
+
+        return $order;
+    }
+
     public function tickets()
     {
         return $this->hasMany(Ticket::class);
@@ -32,16 +44,6 @@ class Order extends Model
     public function concert()
     {
         return $this->belongsTo(Concert::class);
-    }
-
-    public function cancel()
-    {
-        foreach($this->tickets as $ticket) {
-//            $ticket->release();
-            $ticket->update(['order_id'=> null]);
-        }
-
-        $this->delete();
     }
 
     public function ticketQuantity()

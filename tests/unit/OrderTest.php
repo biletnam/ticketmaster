@@ -1,7 +1,9 @@
 <?php
 
 use App\Order;
+use App\Ticket;
 use App\Concert;
+use App\Reservation;
 use App\Exceptions\NotEnoughTicketExceptions;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -27,18 +29,20 @@ class OrderTest extends TestCase
     }
 
     /** @test */
-    function tickets_are_released_when_an_ordered_is_canceled()
+    function creating_an_order_from_a_reservation()
     {
-        $concert = factory(Concert::class)->create()->addTickets(10);
+        $concert = factory(Concert::class)->create(['ticket_price' => 1200]);
+        $tickets = factory(Ticket::class, 3)->create(['concert_id' => $concert->id]);
+        $reservation = new Reservation($tickets, 'john@example.com');
 
-        $order = $concert->orderTickets('jane@example.com', 5);
-        $this->assertEquals(5, $concert->ticketsRemaining());
+        $order = Order::fromReservation($reservation);
 
-        $order->cancel();
+        $this->assertEquals('john@example.com', $order->email);
+        $this->assertEquals('3', $order->ticketQuantity());
+        $this->assertEquals(3600, $order->amount);
 
-        $this->assertEquals(10, $concert->ticketsRemaining());
-        $this->assertNull(Order::find($order->id));
     }
+
 
     /** @test */
     function converting_to_an_array()
